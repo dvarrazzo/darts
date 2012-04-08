@@ -1,0 +1,115 @@
+{% extends "darts/base.tmpl" %}
+
+{% block header %}
+{{ block.super }}
+<script type="text/javascript" charset="utf-8">
+  $(function () {
+    $("#available .player").draggable({
+      helper: 'clone',
+      zindex: 1000,
+      opacity: 0.5,
+      connectToSortable: '#entrants',
+      axis: 'y'
+    });
+
+    $("#entrants")
+      .sortable()
+      .droppable({
+        drop: function (event, ui) {
+          // don't allow duplicate entrants
+          var player = ui.draggable;
+          var player_id = player.attr('data-player-id');
+          var ps = $('#entrants .player[data-player-id="' + player_id + '"]');
+          if (ps.length > 1) {
+            player.remove();
+          }
+          setTargetVisibility();
+        }
+      })
+      .on('click', '.delete a', function(event) {
+        $(this).parents('.player').remove();
+        setTargetVisibility();
+      });
+
+    $('#match_create_form').submit(function() {
+      var data = {
+        csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]')[0].value,
+        score: $('input[name=score]')[0].value,
+        legs: $('input[name=legs]')[0].value,
+        entrants: 
+          $('#entrants .player').map(function (x) {
+              return $(this).attr('data-player-id');
+            }).get().join(',')
+      };
+      $.ajax({
+        url: location.pathname,
+        type: 'POST',
+        data: data,
+        error: function (xhr) {
+          if (xhr.status == 400) {
+            alert(xhr.responseText);
+          }
+          else {
+            alert("error: " + xhr.statusText);
+          }
+        },
+        success: function (data) {
+          location = data.redirect;
+        }
+      });
+
+      return false;
+    });
+
+    var setTargetVisibility = function() {
+      var tgt = $('.drop-target');
+      if ($('#entrants .player').length) {
+        tgt.hide();
+      } else {
+        tgt.show();
+      }
+    }
+  });
+</script>
+{% endblock header %}
+
+
+{% block content %}
+
+<h1>Start new tournament!</h1>
+
+<form id="match_create_form" action="" method="post" accept-charset="utf-8">
+  {% csrf_token %}
+  <p>
+    <label for="legs">Number of legs: </label>
+    <input type="text" name="legs" value="1" />
+  </p>
+
+  <p>
+    <label for="score">Target score: </label>
+    <input type="text" name="score" value="501" />
+  </p>
+  <p><input type="submit" value="Start!" /></p>
+</form>
+
+<h2>Players:</h2>
+
+<ul id="entrants" class="players">
+  <li class="drop-target">Drop here!</li>
+</ul>
+
+<h2>Choose from:</h2>
+
+<ul id="available" class="players">
+{% for p in players %}
+  <li class="player" data-player-id="{{p.id}}"
+  style="display:list-item">
+    <img class="avatar" src="{{p.avatar.url}}" />
+    <span class="username">{{p.username}}</span>
+    <span class="delete"><a href="#">X</a></span>
+  </li>
+{% endfor %}
+</ul>
+
+{% endblock content %}
+

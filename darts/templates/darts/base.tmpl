@@ -1,0 +1,9 @@
+{% extends "base.tmpl" %}
+
+{% load staticfiles %}
+
+{% block header %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'darts/darts.css' %}" type="text/css" media="screen" title="no title" charset="utf-8">
+{% endblock header %}
+
