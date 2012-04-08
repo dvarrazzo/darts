@@ -1,3 +1,54 @@
+/* generic style */
+
+table {
+  border-collapse: collapse;
+}
+
+
+/* new match page */
+
 #available .player .delete {
   display: none;
 }
+
+
+/* game page */
+
+table.players {
+  margin-bottom: 1em;
+}
+
+table.players th {
+  border: 1px solid #888;
+  padding: 0.2em 0.5em;
+}
+
+table.players td {
+  border: 1px solid #888;
+}
+
+table.players tr.current td.player {
+  border: 2px solid red;
+}
+
+table.players td.score {
+  text-align: center;
+  padding: 0.2em 0.5em;
+}
+
+table.players td.throw {
+  text-align: center;
+  padding: 0.2em 0.5em;
+}
+
+table.score {
+  margin-bottom: 1em;
+}
+
+table.score td {
+  padding: 0.3em 1em;
+  text-align: center;
+  border: 1px solid #888;
+  cursor: pointer;
+}
+

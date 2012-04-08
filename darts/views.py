@@ -1,10 +1,11 @@
 from django.db import transaction
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.utils import simplejson
 from django.shortcuts import render
 from django.core.urlresolvers import reverse
 
 from darts import models
+from game import Game
 
 def match_create(request):
     if request.method == 'POST':
@@ -83,5 +84,11 @@ def match_create_post(request):
 
 
 def match_play(request, id):
-    return HttpResponse('play')
+    game = Game()
+    try:
+        game.fetch(id=id)
+    except models.Match.DoesNotExist:
+        raise Http404("match %s" % id)
+
+    return render(request, 'darts/match_play.tmpl', {'game': game, })
 

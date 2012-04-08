@@ -7,6 +7,12 @@ class Player(models.Model):
     def __unicode__(self):
         return self.username or u'unnamed player'
 
+    def __eq__(self, other):
+        return self.id == other.id
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 class Match(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     target_score = models.IntegerField()
@@ -25,11 +31,28 @@ class Leg(models.Model):
     number = models.IntegerField()
     winner = models.ForeignKey(Player, blank=True, null=True)
 
+    def __eq__(self, other):
+        if self.id is None:
+            return other.id is None and other.number == self.number
+        else:
+            return self.id == other.id
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash((self.id, self.number))
+
 class Round(models.Model):
+    leg = models.ForeignKey(Leg)
     number = models.IntegerField()
+    player = models.ForeignKey(Player)
     score = models.IntegerField(blank=True, null=True) # at end of the round
 
 class Throw(models.Model):
+    round = models.ForeignKey(Round)
+    number = models.IntegerField()
     label = models.CharField(max_length=16) # es. "8", "T20", "IRIS", "BULL",
     score = models.IntegerField()   # value of the throw
+
 
