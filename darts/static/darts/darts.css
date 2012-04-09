@@ -41,6 +41,10 @@ table.players td.throw {
   padding: 0.2em 0.5em;
 }
 
+table.players td.current {
+  border: 2px solid green;
+}
+
 table.score {
   margin-bottom: 1em;
 }

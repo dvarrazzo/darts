@@ -15,9 +15,36 @@ class Game(object):
 
     def get_players_and_leg_score(self):
         leg = self.current_leg
+
         players = self.players_leg_order
+        pmap = dict((p.id, p) for p in players)
+
         leg_score = self.get_leg_score(leg)
-        return [ (p, leg_score[p.id], [None, None, None]) for p in players ]
+        rounds = self.get_last_rounds(leg)
+        rmap = dict((r.id, r.player__id) for r in rounds)  # round -> player
+        throws = (models.Throw.objects
+            .filter(round__in=rounds)
+            .order_by('id'))
+
+        # decorate players with leg score and throws
+        for p in players:
+            p.leg_score = leg_score[p.id]
+            p.last_throws = []
+
+        for t in throws:
+            pmap[rmap[t.round_id]].last_throws.append(t)
+
+        # complete the throws list with blank ones
+        for p in players:
+            nthrows = len(p.last_throws)
+            assert nthrows <= 3
+            p.last_throws += [ models.Throw()
+                for i in range(3 - nthrows) ]
+
+            if p == self.current_player and nthrows < 3:
+                p.last_throws[nthrows].current = True
+
+        return players
 
     @property
     @cache.cached_method
@@ -73,11 +100,14 @@ class Game(object):
         idx = (leg.number - 1) % self.match.legs_number
         return players[idx:] + players[:idx]
 
+    def get_last_rounds(self, leg):
+        return (models.Round.objects
+            .filter(leg=leg)
+            .order_by('-number'))[:len(self.entrants)]
+
     def get_leg_score(self, leg):
         players = self.players
-        rounds = (models.Round.objects
-            .filter(leg=leg)
-            .order_by('number'))
+        rounds = self.get_last_rounds(leg)
 
         # map player id -> score
         score = dict((p.id, self.match.target_score) for p in players)
