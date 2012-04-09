@@ -2,8 +2,84 @@
 
 {% block header %}
 {{ block.super }}
-<script type="text/javascript" charset="utf-8">
+<script type="text/javascript">
   $(function () {
+    $('table.score td.score').click(function(e) {
+      var value_elem = $(this);
+      var player_elem = $('table.players tr.current');
+
+      // calc new score
+      var value = parseInt(value_elem.attr('data-value'));
+      var score_elem = $('table.players tr.current td.leg_score');
+      var new_score = parseInt(score_elem.text()) - value;
+      var throw_code = value_elem.attr('data-code');
+
+      // check end of round
+      var win = false;
+      var bust = false;
+      if (new_score == 0 && /D[0-9]+|BULL/.test(throw_code)) {
+        win = true;
+        writeComment('WIN!');
+      } else if (new_score <= 1) {
+        bust = true;
+        writeComment('BUST!');
+      }
+
+      // Write throw
+      var throw_elem = $('table.players tr.current td.throw.current');
+      throw_elem.text(throw_code);
+      throw_elem.attr('data-value', value);
+
+      // If bust, revert the score to before the round
+      if (bust) {
+        new_score += roundScore(player_elem);
+      }
+
+      score_elem.text(new_score);
+
+      // Advance player/throw
+      var throw_next = throw_elem.next();
+      if (!bust && throw_next.hasClass('throw')) {
+        // new throw, same player
+        throw_elem.removeClass('current');
+        throw_next.addClass('current');
+      }
+      else {
+        // new player, first throw
+        var player_next = player_elem.next();
+        if (!player_next.length) {
+          player_next = $('table.players tr.player:first');
+        }
+
+        if (!(win || bust)) { writeComment(roundScore(player_elem)); }
+        throw_elem.removeClass('current');
+        player_elem.removeClass('current');
+
+        // Prepare the next player only if the leg isn't finished
+        if (!win) {
+          player_next.addClass('current');
+          player_next.children('td.throw')
+            .text('-')
+            .attr('data-value', '')
+            .first().addClass('current');
+          writeComment('');
+        }
+      }
+    });
+
+    var roundScore = function (elem) {
+      var score = 0;
+      elem.children('.throw').each(function() {
+        score += parseInt($(this).attr('data-value')) || 0;
+      });
+      return score;
+    };
+
+    var writeComment = function (text) {
+      $('.players tr.current .comment').text(text);
+    };
+
+
   });
 </script>
 {% endblock header %}
@@ -18,18 +94,19 @@
     <th colspan="3">Last throws</th>
   </tr>
 {% for p in game.get_players_and_leg_score %}
-  <tr class="{% ifequal p game.current_player %}current{% endifequal %}">
+  <tr class="player {% ifequal p game.current_player %}current{% endifequal %}">
     <td class="player">
       <img class="avatar" src="{{p.avatar.url}}" />
       <span class="username">{{p.username}}</span>
     </td>
-    <td class="score">{{p.leg_score}}</td>
+    <td class="leg_score">{{p.leg_score}}</td>
   {% for t in p.last_throws %}
     <td class="throw {% if t.current %}current{% endif %}">
       {{t.label|default:'-'}}
     </td>
   {% endfor %}
-  <tr>
+    <td class="comment"></td>
+  </tr>
 {% endfor %}
 </table>
 
@@ -38,9 +115,10 @@
     {% for row in table %}
     <tr>
       {% for score in row %}
-        <td class="score" data-code="{{score.code}}">
-          {{score.label}}
-        </td>
+      <td class="score"
+          data-code="{{score.code}}" data-value="{{score.value}}">
+        {{score.label}}
+      </td>
       {% endfor %}
     </tr>
     {% endfor %}

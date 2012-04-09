@@ -31,7 +31,7 @@ table.players tr.current td.player {
   border: 2px solid red;
 }
 
-table.players td.score {
+table.players td.leg_score {
   text-align: center;
   padding: 0.2em 0.5em;
 }
@@ -43,6 +43,10 @@ table.players td.throw {
 
 table.players td.current {
   border: 2px solid green;
+}
+
+table.players td.comment {
+  border: none;
 }
 
 table.score {
