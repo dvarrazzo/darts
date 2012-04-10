@@ -105,7 +105,53 @@
         success: function (data) {
         }
       });
+
+      writeSuggestion();
     });
+
+    writeSuggestion = function () {
+      var sugg;
+      var player_elem = $('table.players tr.current');
+      if (player_elem.length) {
+        var score = parseInt(player_elem.children('.leg_score').text());
+        var nthrows = 3 - player_elem.children('.throw').map(
+          function (i) { if ($(this).hasClass('current')) return i; })[0];
+        var max_score = 50 + 60 * (nthrows - 1);
+        if (score <= max_score) {
+          sugg = calcThrows(score, nthrows);
+        }
+      }
+
+      $('#suggestion').text(sugg ? "To win: " + sugg.join(' + ') : '');
+    };
+
+    // good for the last throw
+    var throws_last = [];
+    for (var i = 20; i > 0; --i) { throws_last.push([i * 2, 'D' + i]); }
+    throws_last.push([50, 'BULL']);
+
+    // good for first and second throw
+    var throws_other = [];
+    for (var i = 20; i >= 14; --i) { throws_other.push([i * 3, 'T' + i]); }
+    for (var i = 20; i >= 11; --i) { throws_other.push([i * 2, 'D' + i]); }
+    for (var i = 20; i >=  0; --i) { throws_other.push([i,     ''  + i]); }
+    throws_other.push([25, 'RING']);
+    throws_other.push([50, 'BULL']);
+
+    var calcThrows = function (score, nthrows, avail) {
+      if (nthrows < 1) { return null; }
+      if (!avail) { avail = throws_last; }
+      for (var i = 0, ii = avail.length; i < ii; ++i) {
+        var val = avail[i][0];
+        if (val > score) { continue; }
+        if (val == score) { return [ avail[i][1] ]; }
+        var sol = calcThrows(score - val, nthrows - 1, throws_other);
+        if (sol) {
+          sol.push(avail[i][1]);
+          return sol;
+        }
+      }
+    };
 
     var roundScore = function (elem) {
       var score = 0;
@@ -119,7 +165,7 @@
       $('.players tr.current .comment').text(text);
     };
 
-
+    writeSuggestion();
   });
 </script>
 {% endblock header %}
@@ -154,6 +200,8 @@
 <p id="next-leg" style="display: none">
   <a href=".">Go to next leg</a>
 </p>
+
+<p id="suggestion"></p>
 
 {% for table in game.score_tables %}
   <table class="score">
