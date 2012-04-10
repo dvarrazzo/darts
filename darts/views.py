@@ -119,6 +119,7 @@ def match_throw(request, match_id):
             kwargs['_' + k] = v
 
     except Exception, e:
+        transaction.rollback()
         return HttpResponse(str(e),
             status=400, mimetype='plain/text')
 

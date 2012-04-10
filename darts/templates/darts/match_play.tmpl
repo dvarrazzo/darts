@@ -7,6 +7,7 @@
     $('table.score td.score').click(function(e) {
       var value_elem = $(this);
       var player_elem = $('table.players tr.current');
+      if (!player_elem.length) { return; }
       var throw_number = player_elem.children('.throw').map(
         function (i) { if ($(this).hasClass('current')) return i; })[0] + 1;
       var round_number = parseInt($('.players').attr('data-round'));
