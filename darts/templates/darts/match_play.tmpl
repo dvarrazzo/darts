@@ -95,16 +95,8 @@
         url: '{% url darts_match_throw game.match.id %}',
         type: 'POST',
         data: data,
-        error: function (xhr) {
-          if (xhr.status == 400) {
-            alert(xhr.responseText);
-          }
-          else {
-            alert("error: " + xhr.statusText);
-          }
-        },
-        success: function (data) {
-        }
+        error: ajaxError, 
+        success: function (data) { }
       });
 
       writeSuggestion();
@@ -166,6 +158,27 @@
       $('.players tr.current .comment').text(text);
     };
 
+    $('#undo').click(function () {
+      $.ajax({
+        url: '{% url darts_match_undo game.match.id %}',
+        type: 'POST',
+        data: { csrfmiddlewaretoken: '{{csrf_token}}' },
+        error: ajaxError,
+        success: function (data) {
+          location.reload();
+        }
+      });
+    });
+
+    var ajaxError = function (xhr) {
+      if (xhr.status == 400) {
+        alert(xhr.responseText);
+      }
+      else {
+        alert("error: " + xhr.statusText);
+      }
+    };
+
     writeSuggestion();
   });
 </script>
@@ -203,6 +216,8 @@
 </p>
 
 <p id="suggestion"></p>
+
+<p><a href='#' id="undo">Undo</a></p>
 
 {% for table in game.score_tables %}
   <table class="score">

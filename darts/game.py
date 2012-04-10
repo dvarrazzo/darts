@@ -260,6 +260,63 @@ class Game(object):
             leg.winner = player
             leg.save()
 
+    def undo_throw(self):
+        leg = (models.Leg.objects
+            .filter(match=self.match)
+            .order_by('-number'))[0:1]
+
+        if not leg:
+            # no leg has been played yet in the match.
+            return
+
+        leg = leg[0]
+
+        rounds = list(models.Round.objects
+            .filter(leg=leg)
+            .order_by('-number'))[0:2]
+
+        if not rounds:
+            # no round has been played yet in the leg.
+            return
+
+        throw = (models.Throw.objects
+            .filter(round__in=rounds)
+            .order_by('-id'))[0:1]
+
+        if not throw:
+            # no throw played in the leg yet
+            return
+
+        throw = throw[0]
+
+        # there shouldn't be a round without throws in the db, but just in
+        # case...
+        if rounds[0].id == throw.round_id:
+            round = rounds[0]
+        else:
+            rounds[0].delete()
+            round = rounds[1]
+            assert round.id == throw.round_id
+
+        if throw.number > 1:
+            # easy stuff: we just drop one throw from the round
+            throw.delete()
+            if round.score_end is not None:
+                round.score_end = None
+                round.save()
+
+        else:
+            # we must delete the throw and its round
+            throw.delete()
+            round.delete()
+            if round.number == 1:
+                leg.delete()
+
+        # if the last throw had made a winner, well, he is no more
+        if leg.winner_id is not None:
+            leg.winner_id = None
+            leg.save()
+
     def throw_value(self, code):
         m = re.match(r'^(?:([DT])?(\d+))|(RING|BULL)$', code)
         if not m:

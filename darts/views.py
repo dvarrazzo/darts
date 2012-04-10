@@ -84,22 +84,13 @@ def match_create_post(request):
 
 
 def match_play(request, id):
-    game = Game()
-    try:
-        game.fetch(id=id)
-    except models.Match.DoesNotExist:
-        raise Http404("match %s" % id)
-
+    game = fetch_game(id)
     return render(request, 'darts/match_play.tmpl', {'game': game, })
 
 
 @transaction.commit_manually
-def match_throw(request, match_id):
-    game = Game()
-    try:
-        game.fetch(id=match_id)
-    except models.Match.DoesNotExist:
-        raise Http404("match %s" % match_id)
+def match_throw(request, id):
+    game = fetch_game(id)
 
     kwargs = {}
     try:
@@ -137,4 +128,32 @@ def match_throw(request, match_id):
 
     return HttpResponse(simplejson.dumps('ok'),
         mimetype='application/json')
+
+@transaction.commit_manually
+def match_undo(request, id):
+    if request.method != 'POST':
+        transaction.rollback()
+        return HttpResponse("only POST accepted",
+            status=405, mimetype='plain/text')
+
+    game = fetch_game(id)
+    try:
+        game.undo_throw()
+    except Exception:
+        transaction.rollback()
+        raise
+    else:
+        transaction.commit()
+
+    return HttpResponse(simplejson.dumps('ok'),
+        mimetype='application/json')
+
+
+def fetch_game(id):
+    game = Game()
+    try:
+        game.fetch(id=id)
+        return game
+    except models.Match.DoesNotExist:
+        raise Http404("match %s" % id)
 
