@@ -47,12 +47,13 @@ class Round(models.Model):
     leg = models.ForeignKey(Leg)
     number = models.IntegerField()
     player = models.ForeignKey(Player)
-    score = models.IntegerField(blank=True, null=True) # at end of the round
+    score_start = models.IntegerField()
+    score_end = models.IntegerField(blank=True, null=True)
 
 class Throw(models.Model):
     round = models.ForeignKey(Round)
     number = models.IntegerField()
-    label = models.CharField(max_length=16) # es. "8", "T20", "IRIS", "BULL",
+    code = models.CharField(max_length=16) # es. "8", "T20", "RING", "BULL",
     score = models.IntegerField()   # value of the throw
 
 

@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.core.urlresolvers import reverse
 
 from darts import models
-from game import Game
+from game import Game, GameError
 
 def match_create(request):
     if request.method == 'POST':
@@ -91,4 +91,49 @@ def match_play(request, id):
         raise Http404("match %s" % id)
 
     return render(request, 'darts/match_play.tmpl', {'game': game, })
+
+
+@transaction.commit_manually
+def match_throw(request, match_id):
+    game = Game()
+    try:
+        game.fetch(id=match_id)
+    except models.Match.DoesNotExist:
+        raise Http404("match %s" % match_id)
+
+    kwargs = {}
+    try:
+        throw_code = request.POST['throw_code']
+        for k in ('player_id', 'leg_number', 'round_number', 'throw_number',
+                'throw_value', 'leg_score', 'win', 'bust'):
+            try:
+                v = request.POST[k]
+            except KeyError:
+                raise ValueError('missing parameter: %s' % k)
+
+            try:
+                v = int(v)
+            except Exception:
+                raise ValueError('bad value for %s: %s' % (k, v))
+
+            kwargs['_' + k] = v
+
+    except Exception, e:
+        return HttpResponse(str(e),
+            status=400, mimetype='plain/text')
+
+    try:
+        game.store_throw(throw_code, **kwargs)
+    except GameError, e:
+        transaction.rollback()
+        return HttpResponse(str(e),
+            status=400, mimetype='plain/text')
+    except Exception, e:
+        transaction.rollback()
+        raise
+    else:
+        transaction.commit()
+
+    return HttpResponse(simplejson.dumps('ok'),
+        mimetype='application/json')
 
