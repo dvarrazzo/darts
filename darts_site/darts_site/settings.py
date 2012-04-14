@@ -83,8 +83,8 @@ STATICFILES_FINDERS = (
 #    'django.contrib.staticfiles.finders.DefaultStorageFinder',
 )
 
-# Make this unique, and don't share it with anybody.
-SECRET_KEY = '1=4xi=im2^+9rrzjdo=iw&amp;yy7ckn0!xtkt*0o6)!^=tu(5*uq='
+# Override this string in your settings.local.py
+SECRET_KEY = 'TODO:ChangeMe'
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
@@ -146,10 +146,6 @@ LOGGING = {
             'filters': ['require_debug_false'],
             'class': 'django.utils.log.AdminEmailHandler'
         },
-        'console': {
-            'level':'DEBUG',
-            'class':'logging.StreamHandler',
-        },
     },
     'loggers': {
         'django.request': {
@@ -157,9 +153,12 @@ LOGGING = {
             'level': 'ERROR',
             'propagate': True,
         },
-        'django.db.backends': {
-            'level': 'DEBUG',
-            'handlers': ['console'],
-        },
     }
 }
+
+# Load personal settings if available
+psfile = os.path.join(PROJECT_PATH, "settings.local.py")
+if os.path.exists(psfile):
+    execfile(psfile)
+
+

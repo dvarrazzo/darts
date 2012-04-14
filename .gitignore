@@ -3,3 +3,4 @@ lib
 include
 local
 darts_site/darts_site/var
+darts_site/darts_site/settings.local.py
