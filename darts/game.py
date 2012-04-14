@@ -12,21 +12,28 @@ class Game(object):
 
     The object is to be used only once: create, fetch, use, destroy.
     """
-    def fetch(self, id):
-        self.match = models.Match.objects.get(id=id)
-        self.entrants = (models.Entrant.objects
+    def __init__(self, id):
+        self._match_id = id
+
+    @property
+    @cache.cached_method
+    def match(self):
+        return models.Match.objects.get(id=self._match_id)
+
+    @property
+    @cache.cached_method
+    def entrants(self):
+        return (models.Entrant.objects
             .select_related('player')
             .filter(match=self.match)
             .order_by('order')).all()
 
     def get_players_and_leg_score(self):
-        leg = self.current_leg
-
         players = self.players_leg_order
         pmap = dict((p.id, p) for p in players)
 
-        leg_score = self.get_leg_score(leg)
-        rounds = self.get_last_rounds(leg)
+        leg_score = self.current_leg_score
+        rounds = self.last_rounds
         rmap = dict((r.id, r.player_id) for r in rounds)  # round -> player
         throws = (models.Throw.objects
             .filter(round__in=rounds)
@@ -129,7 +136,10 @@ class Game(object):
         idx = (leg_number - 1) % len(players)
         return players[idx:] + players[:idx]
 
-    def get_last_rounds(self, leg):
+    @property
+    @cache.cached_method
+    def last_rounds(self):
+        leg = self.current_leg
         curr = self.current_round
         if curr.id is None:
             nrounds = len(self.entrants) - 1
@@ -138,16 +148,18 @@ class Game(object):
 
         rv = list(models.Round.objects
             .filter(leg=leg)
-            .order_by('-number'))[:nrounds]
+            .order_by('-number')[:nrounds])
 
         if curr.id is None:
             rv.append(curr)
 
         return rv
 
-    def get_leg_score(self, leg):
+    @property
+    @cache.cached_method
+    def current_leg_score(self):
         players = self.players
-        rounds = self.get_last_rounds(leg)
+        rounds = self.last_rounds
 
         # map player id -> score
         smap = dict((p.id, self.match.target_score) for p in players)
@@ -184,7 +196,6 @@ class Game(object):
         if self.match.winner_id is not None:
             raise GameError('this game is over')
 
-        player = self.current_player
         leg = self.current_leg
         round = self.current_round
         if round.id is not None:
@@ -231,7 +242,7 @@ class Game(object):
             next_throw= nthrow + 1
 
         if win:
-            leg.winner = player
+            leg.winner = self.current_player
             leg.save()
 
             mwid = self._get_match_winner_id()
@@ -253,7 +264,7 @@ class Game(object):
             rv['bust'] = True
 
         if win:
-            rv['leg_winner'] = player.id
+            rv['leg_winner'] = self.current_player.id
             if mwid is not None:
                 rv['match_winner'] = mwid
         else:

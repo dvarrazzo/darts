@@ -135,10 +135,8 @@ def match_undo(request, id):
 
 
 def fetch_game(id):
-    game = Game()
     try:
-        game.fetch(id=id)
-        return game
+        return Game(id)
     except models.Match.DoesNotExist:
         raise Http404("match %s" % id)
 
