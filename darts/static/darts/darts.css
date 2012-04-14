@@ -14,38 +14,38 @@ table {
 
 /* game page */
 
-table.players {
+table#players {
   margin-bottom: 1em;
 }
 
-table.players th {
+table#players th {
   border: 1px solid #888;
   padding: 0.2em 0.5em;
 }
 
-table.players td {
+table#players td {
   border: 1px solid #888;
 }
 
-table.players tr.current td.player {
+table#players tr.current td.player {
   border: 2px solid red;
 }
 
-table.players td.leg_score {
+table#players td.leg_score {
   text-align: center;
   padding: 0.2em 0.5em;
 }
 
-table.players td.throw {
+table#players td.throw {
   text-align: center;
   padding: 0.2em 0.5em;
 }
 
-table.players td.current {
+table#players td.current {
   border: 2px solid green;
 }
 
-table.players td.comment {
+table#players td.comment {
   border: none;
 }
 

@@ -92,30 +92,15 @@ def match_play(request, id):
 def match_throw(request, id):
     game = fetch_game(id)
 
-    kwargs = {}
     try:
         throw_code = request.POST['throw_code']
-        for k in ('player_id', 'leg_number', 'round_number', 'throw_number',
-                'throw_value', 'leg_score', 'win', 'bust'):
-            try:
-                v = request.POST[k]
-            except KeyError:
-                raise ValueError('missing parameter: %s' % k)
-
-            try:
-                v = int(v)
-            except Exception:
-                raise ValueError('bad value for %s: %s' % (k, v))
-
-            kwargs['_' + k] = v
-
-    except Exception, e:
+    except KeyError, e:
         transaction.rollback()
-        return HttpResponse(str(e),
+        return HttpResponse("missing throw code",
             status=400, mimetype='plain/text')
 
     try:
-        game.store_throw(throw_code, **kwargs)
+        rv = game.throw(throw_code)
     except GameError, e:
         transaction.rollback()
         return HttpResponse(str(e),
@@ -126,7 +111,7 @@ def match_throw(request, id):
     else:
         transaction.commit()
 
-    return HttpResponse(simplejson.dumps('ok'),
+    return HttpResponse(simplejson.dumps(rv),
         mimetype='application/json')
 
 @transaction.commit_manually

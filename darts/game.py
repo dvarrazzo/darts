@@ -1,4 +1,5 @@
 import re
+from collections import defaultdict
 
 from darts import models
 from darts import cache
@@ -61,7 +62,7 @@ class Game(object):
 
         if leg:
             leg = leg[0]
-            if leg.winner_id is not None:
+            if leg.winner_id is not None and self.match.winner_id is None:
                 leg = models.Leg(number=leg.number+1, match=self.match)
 
         else:
@@ -83,15 +84,15 @@ class Game(object):
             # first round
             return models.Round(leg=leg, number=1,
                 score_start=self.match.target_score,
-                player=self._get_round_player(leg.number, 1))
+                player_id=self._get_round_player_id(leg.number, 1))
         else:
             round = round[0]
 
         if round.score_end:
             # round is over, so have the next one
-            player = self._get_round_player(leg.number, round.number + 1)
+            player_id = self._get_round_player_id(leg.number, round.number + 1)
             prev_round = (models.Round.objects
-                .filter(leg=leg, player=player)
+                .filter(leg=leg, player_id=player_id)
                 .order_by('-number'))[0:1]
             if prev_round:
                 prev_score = prev_round[0].score_end
@@ -99,13 +100,13 @@ class Game(object):
                 prev_score = self.match.target_score
 
             round = models.Round(leg=leg, number=round.number + 1,
-                score_start=prev_score, player=player)
+                score_start=prev_score, player_id=player_id)
 
         return round
 
-    def _get_round_player(self, leg_number, round_number):
-        players = self._get_players_leg_order(leg_number)
-        return players[(round_number - 1) % len(players)]
+    def _get_round_player_id(self, leg_number, round_number):
+        ents = self._get_entrants_leg_order(leg_number)
+        return ents[(round_number - 1) % len(ents)].player_id
 
     @property
     @cache.cached_method
@@ -121,10 +122,10 @@ class Game(object):
     @cache.cached_method
     def players_leg_order(self):
         leg = self.current_leg
-        return self._get_players_leg_order(leg.number)
+        return [e.player for e in self._get_entrants_leg_order(leg.number)]
 
-    def _get_players_leg_order(self, leg_number):
-        players = self.players
+    def _get_entrants_leg_order(self, leg_number):
+        players = self.entrants
         idx = (leg_number - 1) % len(players)
         return players[idx:] + players[:idx]
 
@@ -179,13 +180,10 @@ class Game(object):
                   Score('FALL', 0, "Fallen"),
                   Score('FORE', 0, "Forfeit"), ], ], ]
 
-    def store_throw(self, throw_code,
-            # for validation
-            _player_id=None, _leg_number=None, _round_number=None,
-            _throw_number=None, _throw_value=None, _leg_score=None,
-            _win=None, _bust=None):
+    def throw(self, throw_code):
+        if self.match.winner_id is not None:
+            raise GameError('this game is over')
 
-        # objects we need
         player = self.current_player
         leg = self.current_leg
         round = self.current_round
@@ -205,40 +203,10 @@ class Game(object):
 
         # win/bust?
         win = new_score == 0 and bool(re.match(r'^(D\d+)|BULL$', throw_code))
-        if (_win is not None and bool(_win) != win):
-            raise GameError("we don't agree whether he has win")
         bust = not win and new_score <= 1
-        if (_bust is not None and bool(_bust) != bust):
-            raise GameError("we don't agree whether he his bust")
 
         if bust:
             new_score = prev_score
-
-        # validate stuff
-        if _player_id is not None and _player_id != player.id:
-            raise GameError(
-                'the player is %s, not $s' % (player.id, _player_id))
-
-        if _leg_number is not None and _leg_number != leg.number:
-            raise GameError(
-                'we are at leg %s, not %s' % (leg.number, _leg_number))
-
-        if _round_number is not None and _round_number != round.number:
-            raise GameError(
-                'we are at round %s, not %s' % (round.number, _round_number))
-
-        if _throw_number is not None and _throw_number != nthrow:
-            raise GameError(
-                'we are at throw %s, not %s' % (nthrow, _throw_number))
-
-        if _throw_value is not None and _throw_value != value:
-            raise GameError(
-                'value for %s is %s not %s' % (throw_code, value, _throw_value))
-
-        if _leg_score is not None and new_score != _leg_score:
-            raise GameError(
-                'the leg score shoud be %s, not %s'
-                % (new_score, _leg_score))
 
         # save the objects
         if leg.id is None:
@@ -255,10 +223,76 @@ class Game(object):
         if nthrow == 3 or win or bust:
             round.score_end = new_score
             round.save()
+            if not win:
+                next_round = round.number + 1
+                next_throw = 1
+        else:
+            next_round = round.number
+            next_throw= nthrow + 1
 
         if win:
             leg.winner = player
             leg.save()
+
+            mwid = self._get_match_winner_id()
+            if mwid is not None:
+                self.match.winner_id = mwid
+                self.match.save()
+
+        else:
+            if nthrow == 3 or bust:
+                next_player = self._get_round_player_id(leg.number, next_round)
+            else:
+                next_player = self.current_round.player_id
+
+        rv = {}
+        rv['leg_score'] = new_score
+        rv['throws'] = [ { 'code': t.code, 'score': t.score } for t in throws ]
+
+        if bust:
+            rv['bust'] = True
+
+        if win:
+            rv['leg_winner'] = player.id
+            if mwid is not None:
+                rv['match_winner'] = mwid
+        else:
+            # note: not defined if win
+            rv['next_player'] = next_player
+            rv['next_throw'] = next_throw
+
+        return rv
+
+    def _get_match_winner_id(self):
+        legs = (models.Leg.objects
+            .filter(match=self.match, winner__isnull=False)).all()
+        pids = [ e.player_id for e in self.entrants ]
+        assert len(pids) > 0
+
+        # special case: if there is a single players, he'll play all the legs
+        if len(pids) == 1:
+            if len(legs) >= self.match.legs_number:
+                return pids[0]
+            else:
+                return None
+
+        player_score = defaultdict(int)
+        for leg in legs:
+            player_score[leg.winner_id] += 1
+
+        rank = [ (player_score[pid], pid) for pid in pids ]
+        rank.sort(reverse=True)
+
+        # if the second can't get the first, the first is the winner
+        if rank[1][0] + (self.match.legs_number - len(legs)) < rank[0][0]:
+            for pid in pids:
+                if pid == rank[0][1]:
+                    return pid
+            else:
+                assert False
+        else:
+            return None
+
 
     def undo_throw(self):
         leg = (models.Leg.objects
@@ -316,6 +350,11 @@ class Game(object):
         if leg.winner_id is not None:
             leg.winner_id = None
             leg.save()
+
+        # ditto for the match
+        if self.match.winner_id is not None:
+            self.match.winner_id = None
+            self.match.save()
 
     def throw_value(self, code):
         m = re.match(r'^(?:([DT])?(\d+))|(RING|BULL)$', code)
