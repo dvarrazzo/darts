@@ -1,2 +1,12 @@
 A stupid app to keep track of darts matches.
 
+How to get it::
+
+	git clone git://github.com/dvarrazzo/darts.git
+	virtualenv darts
+	cd darts
+	source bin/activate
+	easy_install -U Django
+	python django_site/manage.py syncdb
+	python django_site/manage.py runserver port
+
