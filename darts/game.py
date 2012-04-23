@@ -177,21 +177,6 @@ class Game(object):
 
         return smap
 
-    def score_tables(self):
-        return [
-            [   [ Score('%s' % i, i) for i in range(1,11) ],
-                [ Score('D%s' % i, 2 * i) for i in range(1,11) ],
-                [ Score('T%s' % i, 3 * i) for i in range(1,11) ], ],
-            [   [ Score('%s' % i, i) for i in range(11,21) ],
-                [ Score('D%s' % i, 2 * i) for i in range(11,21) ],
-                [ Score('T%s' % i, 3 * i) for i in range(11,21) ], ],
-            [   [ Score('RING', 25, "Bull's Ring"),
-                  Score('BULL', 50, "Bull's Eye"), ], ],
-            [   [ Score('MISS', 0, "Miss"),
-                  Score('WALL', 0, "Wall!"),
-                  Score('FALL', 0, "Fallen"),
-                  Score('FORE', 0, "Forfeit"), ], ], ]
-
     def throw(self, throw_code):
         if self.match.winner_id is not None:
             raise GameError('this game is over')
