@@ -92,26 +92,26 @@ $(function () {
   for (var i = 0; i < 20; i++) {
     var num = numbers[i];
     var parity = ((i % 2 == 0) ? 'even_slice' : 'odd_slice');
-    var cl = parity + ' area n' + num;
+    var cl = parity + ' area';
 
     s = make_section(ORS.br, ORS.inner, i);
     x = svgelement('path',
-      { class: cl, d: s.path(), 'data-code': '' + numbers[i] });
+      { class: cl, d: s.path(), 'data-code': '' + num });
     cont.appendChild(x);
 
     s = make_section(ORS.inner, ORS.tr, i);
     x = svgelement('path',
-      { class: cl + ' treble', d: s.path(), 'data-code': 'T' + numbers[i] });
+      { class: cl + ' treble', d: s.path(), 'data-code': 'T' + num });
     cont.appendChild(x);
 
     s = make_section(ORS.tr, ORS.outer, i);
     x = svgelement('path',
-      { class: cl, d: s.path(), 'data-code': '' + numbers[i] });
+      { class: cl, d: s.path(), 'data-code': '' + num });
     cont.appendChild(x);
 
     s = make_section(ORS.outer, ORS.dr, i);
     x = svgelement('path',
-      { class: cl + ' double', d: s.path(), 'data-code': 'D' + numbers[i] });
+      { class: cl + ' double', d: s.path(), 'data-code': 'D' + num });
     cont.appendChild(x);
 
     var tl = text_location(i);
