@@ -60,16 +60,15 @@ function text_location(index) {
 	return polar_to_rect(index * slice, r);
 }
 
-// originally all in mm
-var ring = 8.0;
+var ring = 16;
 ORS = { // outer radii
-	be: 12.7/2,
-	br: 32.0/2,
-	inner: 107 - ring,
-	tr: 107,
-	outer: 170 - ring,
-	dr: 170,
-	edge: 451.0 / 2
+  be: 15, // bull's eye
+  br: 30, // bull's ring
+  inner: 107 - ring,
+  tr: 107, // triple ring
+  outer: 170 - ring,
+  dr: 170, // dounbe ring
+  edge: 226
 };
 
 $(function () {
