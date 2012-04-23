@@ -188,20 +188,16 @@ $(function () {
 			  '': 1,
 		  };
 
-		  var score, code;
+		  var code;
 		  if (e.base == 'RING') {
 			  code = 'RING'
-			  score = 25;
 		  } else if (e.base == 'BULL') {
 			  code = 'BULL';
-			  score = 50;
 	      } else if (typeof(e.base) == 'number') {
 			  var prefix = e.modifier ? e.modifier : '';
 			  code = prefix + e.base;
-			  score = e.base * multipliers[prefix];
 		  } else {
 			  code = e.base;
-			  score = 0;
 		  }
 		  $.ajax({
 			  url: '{% url darts_match_throw game.match.id %}',
