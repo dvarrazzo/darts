@@ -6,58 +6,58 @@
 /*  Take care of drawing the dartboard */
 
 function svgelement(name, attrs, content) {
-	var svgns = "http://www.w3.org/2000/svg";
-	var el = document.createElementNS(svgns, name);
-	for (a in attrs) {
-		el.setAttributeNS(null, a, attrs[a]);
-	}
-	if (content !== undefined) {
-		el.appendChild(document.createTextNode(content));
-	}
-	return el;
+  var svgns = "http://www.w3.org/2000/svg";
+  var el = document.createElementNS(svgns, name);
+  for (a in attrs) {
+    el.setAttributeNS(null, a, attrs[a]);
+  }
+  if (content !== undefined) {
+    el.appendChild(document.createTextNode(content));
+  }
+  return el;
 }
 
 Math.Tau = 2 * Math.PI;
 
 function polar_to_rect(angle, radius) {
-	return [Math.cos(angle) * radius, -Math.sin(angle) * radius];
+  return [Math.cos(angle) * radius, -Math.sin(angle) * radius];
 };
 
 function make_section(ir, or, index) {
-	var slice = Math.Tau / 20;
-	return {
-		ir: ir,
-		or: or,
-		start: {
-			inner: polar_to_rect((index - 0.5) * slice, ir),
-			outer: polar_to_rect((index - 0.5) * slice, or),
-		},
-		end: {
-			inner: polar_to_rect((index + 0.5) * slice, ir),
-			outer: polar_to_rect((index + 0.5) * slice, or),
-		},
-		path: function () {
-			var s = this;
-			parts = [
-				'M', s.start.inner[0], s.start.inner[1],
-				'L', s.start.outer[0], s.start.outer[1],
-				'A', s.or, s.or, 0, 0, 0, s.end.outer[0], s.end.outer[1],
-				'L', s.end.inner[0], s.end.inner[1],
-				'A', s.ir, s.ir, 0, 0, 1, s.start.inner[0], s.start.inner[1],
-				'z'
-			];
+  var slice = Math.Tau / 20;
+  return {
+    ir: ir,
+    or: or,
+    start: {
+      inner: polar_to_rect((index - 0.5) * slice, ir),
+      outer: polar_to_rect((index - 0.5) * slice, or),
+    },
+    end: {
+      inner: polar_to_rect((index + 0.5) * slice, ir),
+      outer: polar_to_rect((index + 0.5) * slice, or),
+    },
+    path: function () {
+      var s = this;
+      parts = [
+        'M', s.start.inner[0], s.start.inner[1],
+        'L', s.start.outer[0], s.start.outer[1],
+        'A', s.or, s.or, 0, 0, 0, s.end.outer[0], s.end.outer[1],
+        'L', s.end.inner[0], s.end.inner[1],
+        'A', s.ir, s.ir, 0, 0, 1, s.start.inner[0], s.start.inner[1],
+        'z'
+      ];
 
-			return parts.join(' ');
-		}
-	};
+      return parts.join(' ');
+    }
+  };
 }
 
 function text_location(index) {
-	var slice = Math.Tau / 20;
-	var frac_to_edge = 0.4;
+  var slice = Math.Tau / 20;
+  var frac_to_edge = 0.4;
 
-	var r = frac_to_edge * ORS.edge + (1 - frac_to_edge) * ORS.dr;
-	return polar_to_rect(index * slice, r);
+  var r = frac_to_edge * ORS.edge + (1 - frac_to_edge) * ORS.dr;
+  return polar_to_rect(index * slice, r);
 }
 
 var ring = 16;
@@ -72,185 +72,154 @@ ORS = { // outer radii
 };
 
 $(function () {
-    var cont = $('#dartboard').get(0);
-    var s, x;
+  var cont = $('#dartboard').get(0);
+  var s, x;
 
-    // starts from 3 o'clock, counterclockwise
-    var numbers = [6, 13, 4, 18, 1, 20, 5, 12, 9, 14, 11, 8, 16, 7, 19, 3, 17, 2, 15, 10];
+  // starts from 3 o'clock, counterclockwise
+  var numbers = [6, 13, 4, 18, 1, 20, 5, 12, 9, 14, 11, 8, 16, 7, 19, 3, 17, 2, 15, 10];
 
-    x = svgelement('circle', {
-		cx: 0,
-		cy: 0,
-		r: ORS.edge,
-		class: 'board',
-    });
+  x = svgelement('circle', { cx: 0, cy: 0, r: ORS.edge, class: 'board' });
+  cont.appendChild(x);
+
+  x = svgelement('circle', { cx: 0, cy: 0, r: ORS.br, class: 'area bullring' });
+  cont.appendChild(x);
+
+  x = svgelement('circle', { cx: 0, cy: 0, r: ORS.be, class: 'area bullseye' });
+  cont.appendChild(x);
+
+  for (var i = 0; i < 20; i++) {
+    var num = numbers[i];
+    var parity = ((i % 2 == 0) ? 'even_slice' : 'odd_slice');
+    var cl = parity + ' area n' + num;
+
+    s = make_section(ORS.br, ORS.inner, i);
+    x = svgelement('path', { class: cl, d: s.path() });
     cont.appendChild(x);
 
-    x = svgelement('circle', {
-		cx: 0,
-		cy: 0,
-		r: ORS.br,
-		class: 'area bullring',
-    });
+    s = make_section(ORS.inner, ORS.tr, i);
+    x = svgelement('path', { class: cl + ' treble', d: s.path() });
     cont.appendChild(x);
 
-    x = svgelement('circle', {
-		cx: 0,
-		cy: 0,
-		r: ORS.be,
-		class: 'area bullseye',
-    });
+    s = make_section(ORS.tr, ORS.outer, i);
+    x = svgelement('path', { class: cl, d: s.path() });
     cont.appendChild(x);
 
-    for (var i = 0; i < 20; i++) {
-		var num = numbers[i];
-		var parity = ((i % 2 == 0) ? 'even_slice' : 'odd_slice');
-		var cl = parity + ' area n' + num;
+    s = make_section(ORS.outer, ORS.dr, i);
+    x = svgelement('path', { class: cl + ' double', d: s.path() });
+    cont.appendChild(x);
 
-		s = make_section(ORS.br, ORS.inner, i);
-		x = svgelement('path', {
-			class: cl,
-			d: s.path()
-		});
-		cont.appendChild(x);
+    var tl = text_location(i);
+    x = svgelement('text',
+      { id: 'text_n' + num, 'class': 'scorenum', x: tl[0], y: tl[1], },
+      num);
+    cont.appendChild(x);
+  }
 
-		s = make_section(ORS.inner, ORS.tr, i);
-		x = svgelement('path', {
-			class: cl + ' treble',
-			d: s.path()
-		});
-		cont.appendChild(x);
-
-		s = make_section(ORS.tr, ORS.outer, i);
-		x = svgelement('path', {
-			class: cl,
-			d: s.path()
-		});
-		cont.appendChild(x);
-
-		s = make_section(ORS.outer, ORS.dr, i);
-		x = svgelement('path', {
-			class: cl + ' double',
-			d: s.path()
-		});
-		cont.appendChild(x);
-
-		var tl = text_location(i);
-		x = svgelement('text', {
-			id: 'text_n' + num,
-			'class': 'scorenum',
-			x: tl[0],
-			y: tl[1],
-		}, num);
-		cont.appendChild(x);
+  $('.dartboard .area').bind('click', function (e) {
+    var el = $(e.target);
+    var base = null, modifier = null;
+    // some jquery stuff doesn't work well with svg elements
+    var c = e.target.className.baseVal;
+    if (/\bbullseye\b/.test(c)) {
+      base = 'BULL';
+    }
+    else if (/\bbullring\b/.test(c)) {
+      base = 'RING';
+    }
+    else {
+      var m = /\bn(\d+)\b/.exec(c);
+      base = parseInt(m[1], 10);
+      modifier = (/\bdouble\b/.test(c) ? 'D' : (/\btreble\b/.test(c) ? 'T' : null));
     }
 
-
-    $('.dartboard .area').bind('click', function (e) {
-		var el = $(e.target);
-		var base = null, modifier = null;
-		// some jquery stuff doesn't work well with svg elements
-		var c = e.target.className.baseVal;
-		if (/\bbullseye\b/.test(c)) {
-			base = 'BULL';
-		}
-		else if (/\bbullring\b/.test(c)) {
-			base = 'RING';
-		}
-		else {
-			var m = /\bn(\d+)\b/.exec(c);
-			base = parseInt(m[1], 10);
-			modifier = (/\bdouble\b/.test(c) ? 'D' : (/\btreble\b/.test(c) ? 'T' : null));
-		}
-
-		var dart = jQuery.Event('dart');
-		dart.base = base;
-		dart.modifier = modifier;
-		el.closest('.dartboard').trigger(dart);
-    });
-
-	$('table.score td.score').bind('click', function (e) {
-		var dart = jQuery.Event('dart');
-		dart.base = $(e.currentTarget).attr('data-code');
-		dart.modifier = null;
-		$('svg.dartboard').trigger(dart);
-	});
+    var dart = jQuery.Event('dart');
+    dart.base = base;
+    dart.modifier = modifier;
+    el.closest('.dartboard').trigger(dart);
   });
+
+  $('table.score td.score').bind('click', function (e) {
+    var dart = jQuery.Event('dart');
+    dart.base = $(e.currentTarget).attr('data-code');
+    dart.modifier = null;
+    $('svg.dartboard').trigger(dart);
+  });
+});
 </script>
 
 
 <script type="text/javascript">
   $(function () {
-      $('.dartboard').bind('dart', function(e) {
-		  var multipliers = {
-			  'T': 3,
-			  'D': 2,
-			  '': 1,
-		  };
+    $('.dartboard').bind('dart', function(e) {
+      var multipliers = {
+        'T': 3,
+        'D': 2,
+        '': 1,
+      };
 
-		  var code;
-		  if (e.base == 'RING') {
-			  code = 'RING'
-		  } else if (e.base == 'BULL') {
-			  code = 'BULL';
-	      } else if (typeof(e.base) == 'number') {
-			  var prefix = e.modifier ? e.modifier : '';
-			  code = prefix + e.base;
-		  } else {
-			  code = e.base;
-		  }
-		  $.ajax({
-			  url: '{% url darts_match_throw game.match.id %}',
-			  type: 'POST',
-			  data: {
-				  csrfmiddlewaretoken: '{{csrf_token}}',
-				  throw_code: code },
-			  error: ajaxError,
-			  success: function (data) {
-				  // update the scores
-				  $('#players .current .leg_score').text(data.leg_score);
-				  $('#players .current .throw').each(function(i) {
-					  $(this).text(data.throws[i] ? data.throws[i].code : '-');
-				  });
+      var code;
+      if (e.base == 'RING') {
+        code = 'RING'
+      } else if (e.base == 'BULL') {
+        code = 'BULL';
+        } else if (typeof(e.base) == 'number') {
+        var prefix = e.modifier ? e.modifier : '';
+        code = prefix + e.base;
+      } else {
+        code = e.base;
+      }
+      $.ajax({
+        url: '{% url darts_match_throw game.match.id %}',
+        type: 'POST',
+        data: {
+          csrfmiddlewaretoken: '{{csrf_token}}',
+          throw_code: code },
+        error: ajaxError,
+        success: function (data) {
+          // update the scores
+          $('#players .current .leg_score').text(data.leg_score);
+          $('#players .current .throw').each(function(i) {
+            $(this).text(data.throws[i] ? data.throws[i].code : '-');
+          });
 
-				  // write the comment
-				  if (data.bust) {
-					  writeComment('BUST!');
-				  } else if (data.leg_winner) {
-					  writeComment('WIN!', data.leg_winner);
-				  } else if (data.throws.length == 3) {
-					  writeComment(data.throws[0].score
-								   + data.throws[1].score
-								   + data.throws[2].score);
-				  }
-				  if (data.match_winner) {
-					  writeComment('MATCH WINNER!', data.match_winner);
-				  }
+          // write the comment
+          if (data.bust) {
+            writeComment('BUST!');
+          } else if (data.leg_winner) {
+            writeComment('WIN!', data.leg_winner);
+          } else if (data.throws.length == 3) {
+            writeComment(data.throws[0].score
+                   + data.throws[1].score
+                   + data.throws[2].score);
+          }
+          if (data.match_winner) {
+            writeComment('MATCH WINNER!', data.match_winner);
+          }
 
-				  // move the next action indicators
-				  $('#players .current .throw.current').removeClass('current');
-				  $('#players .current').removeClass('current');
-				  if (data.next_player) {
-					  $('#players .player[data-id=' + data.next_player + ']')
-						  .addClass('current');
-					  $($('#players .current .throw')[data.next_throw - 1])
-						  .addClass('current');
-					  if (data.next_throw == 1) {
-						  $('#players .current .throw').text('-');
-					  }
-				  }
-				  else {
-					  if (data.match_winner) {
-						  $('#new-match').show();
-					  } else {
-						  $('#next-leg').show();
-					  }
-				  }
+          // move the next action indicators
+          $('#players .current .throw.current').removeClass('current');
+          $('#players .current').removeClass('current');
+          if (data.next_player) {
+            $('#players .player[data-id=' + data.next_player + ']')
+              .addClass('current');
+            $($('#players .current .throw')[data.next_throw - 1])
+              .addClass('current');
+            if (data.next_throw == 1) {
+              $('#players .current .throw').text('-');
+            }
+          }
+          else {
+            if (data.match_winner) {
+              $('#new-match').show();
+            } else {
+              $('#next-leg').show();
+            }
+          }
 
-				  writeSuggestion();
-			  }
-		  });
+          writeSuggestion();
+        }
       });
+    });
 
     writeSuggestion = function () {
       var sugg;
@@ -384,11 +353,11 @@ $(function () {
 
 <table class="score">
     <tr>
-	<td class="score" data-code="MISS">Miss</td>
-	<td class="score" data-code="WALL">Wall</td>
-	<td class="score" data-code="FALL">Fallen</td>
-	<td class="score" data-code="FORE">Forefeit</td>
-	</tr>
+  <td class="score" data-code="MISS">Miss</td>
+  <td class="score" data-code="WALL">Wall</td>
+  <td class="score" data-code="FALL">Fallen</td>
+  <td class="score" data-code="FORE">Forefeit</td>
+  </tr>
 </table>
 <p><a href='#' id="undo">Undo</a></p>
 
