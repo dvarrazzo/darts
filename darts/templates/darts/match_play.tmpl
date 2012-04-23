@@ -347,52 +347,7 @@ $(function () {
 
 {% block content %}
 
-<table id="players">
-  <tr>
-    <th>Player</th>
-    <th>Score</th>
-    <th colspan="3">Last throws</th>
-  </tr>
-{% for p in game.get_players_and_leg_score %}
-  <tr class="player {% ifequal p game.current_player %}current{% endifequal %}"
-      data-id="{{p.id}}">
-    <td class="player">
-      <img class="avatar" src="{{p.avatar.url}}" />
-      <span class="username">{{p.username}}</span>
-    </td>
-    <td class="leg_score">{{p.leg_score}}</td>
-  {% for t in p.last_throws %}
-    <td class="throw {% if t.current %}current{% endif %}">
-      {{t.code|default:'-'}}
-    </td>
-  {% endfor %}
-    <td class="comment"></td>
-  </tr>
-{% endfor %}
-</table>
-
-<p id="next-leg" style="display: none">
-  <a href=".">Go to next leg</a>
-</p>
-
-<p id="new-match" style="display: none">
-  <a href="{% url darts_match_create %}">Start a new match</a>
-</p>
-
-<p id="suggestion"></p>
-
-<p><a href='#' id="undo">Undo</a></p>
-
-<table class="score">
-    <tr>
-	<td class="score" data-code="MISS">Miss</td>
-	<td class="score" data-code="WALL">Wall</td>
-	<td class="score" data-code="FALL">Fallen</td>
-	<td class="score" data-code="FORE">Forefeit</td>
-	</tr>
-</table>
-
-<svg xmlns="http://www.w3.org/2000/svg" width="451px" height="451px" style="float: left;" class="dartboard">
+<svg xmlns="http://www.w3.org/2000/svg" width="451px" height="451px" style="float: left; margin-right: 2em;" class="dartboard">
   <defs>
     <style type="text/css"><![CDATA[
       text.scorenum {
@@ -431,6 +386,51 @@ $(function () {
     </g>
   </g>
 </svg>
+
+<table class="score">
+    <tr>
+	<td class="score" data-code="MISS">Miss</td>
+	<td class="score" data-code="WALL">Wall</td>
+	<td class="score" data-code="FALL">Fallen</td>
+	<td class="score" data-code="FORE">Forefeit</td>
+	</tr>
+</table>
+<p><a href='#' id="undo">Undo</a></p>
+
+<table id="players">
+  <tr>
+    <th>Player</th>
+    <th>Score</th>
+    <th colspan="3">Last throws</th>
+  </tr>
+{% for p in game.get_players_and_leg_score %}
+  <tr class="player {% ifequal p game.current_player %}current{% endifequal %}"
+      data-id="{{p.id}}">
+    <td class="player">
+      <img class="avatar" src="{{p.avatar.url}}" />
+      <span class="username">{{p.username}}</span>
+    </td>
+    <td class="leg_score">{{p.leg_score}}</td>
+  {% for t in p.last_throws %}
+    <td class="throw {% if t.current %}current{% endif %}">
+      {{t.code|default:'-'}}
+    </td>
+  {% endfor %}
+    <td class="comment"></td>
+  </tr>
+{% endfor %}
+</table>
+
+<p id="next-leg" style="display: none">
+  <a href=".">Go to next leg</a>
+</p>
+
+<p id="new-match" style="display: none">
+  <a href="{% url darts_match_create %}">Start a new match</a>
+</p>
+
+<p id="suggestion"></p>
+
 
 {% endblock content %}
 
