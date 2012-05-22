@@ -4,6 +4,19 @@
 {{ block.super }}
 <script type="text/javascript" charset="utf-8">
   $(function () {
+    $("#available")
+      .on('click', '.add a', function(event) {
+        var player = $(this).parents('.player').clone();
+
+        // check duplicate
+        var player_id = player.attr('data-player-id');
+        var ps = $('#entrants .player[data-player-id="' + player_id + '"]');
+        if (ps.length) { return; }
+
+        player.appendTo('#entrants');
+        setTargetVisibility();
+      });
+
     $("#available .player").draggable({
       helper: 'clone',
       zindex: 1000,
@@ -36,7 +49,7 @@
         csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]')[0].value,
         score: $('input[name=score]')[0].value,
         legs: $('input[name=legs]')[0].value,
-        entrants: 
+        entrants:
           $('#entrants .player').map(function (x) {
               return $(this).attr('data-player-id');
             }).get().join(',')
@@ -105,6 +118,7 @@
   <li class="player" data-player-id="{{p.id}}" style="display:list-item">
     <img class="avatar" src="{{p.avatar.url}}" />
     <span class="username">{{p.username}}</span>
+    <span class="add"><a href="#">+</a></span>
     <span class="delete"><a href="#">X</a></span>
   </li>
 {% endfor %}

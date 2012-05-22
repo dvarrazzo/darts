@@ -16,6 +16,10 @@ img.avatar {
   display: none;
 }
 
+#entrants .player .add {
+  display: none;
+}
+
 
 /* game page */
 
